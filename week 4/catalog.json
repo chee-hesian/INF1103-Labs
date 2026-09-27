@@ -1,0 +1,18 @@
+{
+    "Wireless Mouse": {
+        "id": "1001",
+        "price": 25.50
+    },
+    "Keyboard": {
+        "id": "1002",
+        "price": 45.00
+    },
+    "USB Cable": {
+        "id": "1003",
+        "price": 10.00
+    },
+    "Laptop Stand": {
+        "id": "1004",
+        "price": 35.00
+    }
+}
