@@ -1,3 +1,9 @@
-Total Deliveries: 2
-Wireless Mouse, 2, 51.00, 5.10
-Keyboard, 1, 45.00, 4.50
+--- Current Stock Totals ---
+Total Unique Items: 2
+1001, Wireless Mouse, 10
+1002, Keyboard, 10
+
+--- Transaction History Log ---
+Total Recorded Transactions: 2
+1001, Wireless Mouse, 10
+1002, Keyboard, 10

@@ -8,29 +8,56 @@ def load_catalog():
         with open(os.path.join(SCRIPT_DIR, "catalog.json"), "r") as file:
             return json.load(file)
     except (FileNotFoundError, json.JSONDecodeError):
-        {}
+        return {}
         
 def load_inventory():
     inventory_stock = {}
     history_list = []
     filepath = os.path.join(SCRIPT_DIR, "inventory.txt")
 
-    try:
-        with open(filepath, "r") as file:
-            lines = file.readlines()
-            for line in lines:
-                line = line.strip()
-                if not line or line.startswith("Total Deliveries:"):
-                    continue
-                parts = line.split(", ")
-                if len(parts) == 4:
-                    item, qty, val, tax = parts[0], int(parts[1]), float(parts[2]), float(parts[3])
-                    history_list.append((item, qty, val, tax))
-                    inventory_stock[item] = inventory_stock.get(item, 0) + qty
-    except FileNotFoundError:
-        pass
+    if not os.path.exists(filepath):
+        return inventory_stock, history_list
+
+    current_section = None
+    with open(filepath, "r") as file:
+        for line in file:
+            line = line.strip()
+            if not line or line.startswith("Total Unique Items:") or line.startswith("Total Recorded Transactions:"):
+                continue
+
+            if line == "--- Current Stock Totals ---":
+                current_section = "totals"
+                continue
+            elif line == "--- Transaction History Log ---":
+                current_section = "history"
+                continue
+
+            parts = line.split(", ")
+            if current_section == "totals" and len(parts) == 3:
+                _, name, qty = parts[0], parts[1], int(parts[2])
+                inventory_stock[name] = qty
+            elif current_section == "history" and len(parts) == 3:
+                history_list.append((parts[0], parts[1], int(parts[2])))
     
     return inventory_stock, history_list
+
+def save_inventory(inventory_stock, history_list, catalog):
+    filepath = os.path.join(SCRIPT_DIR, "inventory.txt")
+    with open(filepath, "w") as file:
+
+        file.write("--- Current Stock Totals ---\n")
+        file.write(f"Total Unique Items: {len(inventory_stock)}\n")
+        for item_name, qty in inventory_stock.items():
+            item_id = catalog[item_name]["id"]
+            file.write(f"{item_id}, {item_name}, {qty}\n")
+
+        file.write("\n--- Transaction History Log ---\n")
+        file.write(f"Total Recorded Transactions: {len(history_list)}\n")
+        for entry in history_list:
+            item_id, item_name, qty = entry
+            file.write(f"{item_id}, {item_name}, {qty}\n")
+
+    print("Order and transaction history successfully saved to inventory.txt")
 
 def get_valid_input(catalog):
     item_input = input("Enter product name or ID to add items, or 'quit' to exit: ").strip()
@@ -52,7 +79,7 @@ def get_valid_input(catalog):
         if quantity < 0:
             print("Please enter a non-negative integer for quantity.")
             return None, None
-        return quantity, matched_item
+        return matched_item, quantity
     except ValueError:
         print("Please enter a valid integer for quantity.")
         return None, None
@@ -72,10 +99,20 @@ catalog = load_catalog()
 if not catalog:
     print("Error: 'catalog.json' file not found or is not a valid JSON. Exiting program.")
     exit()
+    
 inventory, transaction_history = load_inventory()
-print("Initial Inventory:", inventory)
+
+print("Current Orders:")
+if inventory:
+    for item_name, qty in inventory.items():
+        item_id = catalog[item_name]["id"]
+        print(f"{item_id}, {item_name}: {qty}")
+else:
+    print("No current orders.")
 rejected_entries = 0
 deliveries_processed = 0
+total_value = 0.0
+total_tax = 0.0
 
 
 while True:
@@ -83,9 +120,7 @@ while True:
     
     if item == 'quit':
         generate_report(deliveries_processed, rejected_entries)
-        print(f"\n[Verification] Recorded transactions in memory ({len(transaction_history)} entries):")
-        for record in transaction_history:
-            print("  ", record)
+        save_inventory(inventory, transaction_history, catalog)
         break
     
     elif quantity is None:
@@ -93,19 +128,21 @@ while True:
 
     else:
         inventory[item] = process_delivery(inventory.get(item, 0), quantity)
+        item_id = catalog[item]["id"]
         item_price = catalog[item]["price"]
         delivery_value = quantity * item_price
         tax = calculate_tax(delivery_value)
         
-        transaction_history.append((item, quantity, delivery_value, tax))
+        transaction_history.append((item_id, item, quantity))
+        
+        print("\nNew Order Added:")
+        print(f"{item_id}, {item}, {quantity}\n")
         
         if sum(inventory.values()) > 500:
             print("Warning: Inventory exceeds 500 items.")
             rejected_entries += 1
             generate_report(deliveries_processed, rejected_entries)
-            print(f"\n[Verification] Recorded transactions in memory ({len(transaction_history)} entries):")
-            for record in transaction_history:
-                print("  ", record)
+            save_inventory(inventory, transaction_history, catalog)
             break
         
         deliveries_processed += 1
