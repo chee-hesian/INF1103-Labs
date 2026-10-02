@@ -4,8 +4,22 @@ import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FILE_PATH = os.path.join(SCRIPT_DIR, "inventory.json")
 
-with open(FILE_PATH, "r") as file:
-    inventory = json.load(file)
+
+
+def load_inventory():
+    if os.path.exists(FILE_PATH):
+        print("inventory.json file found. Loading inventory...")
+        try:
+            with open(FILE_PATH, "r") as file:
+                inventory = json.load(file)
+                print("Inventory loaded successfully.")
+                return inventory
+        except json.JSONDecodeError:
+            print("Error: inventory.json is not a valid JSON file. Starting with an empty inventory.")
+            return []
+    else:
+        print("inventory.json file not found. Starting with an empty inventory.")
+        return []
 
 
 def display_all(inventory):
