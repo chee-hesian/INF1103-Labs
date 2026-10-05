@@ -20,6 +20,16 @@ def load_inventory():
     else:
         print("inventory.json file not found. Starting with an empty inventory.")
         return []
+    
+
+def save_inventory(inventory, silent=False):
+    """Save the inventory list to inventory.json."""
+    if not silent:
+        print("Saving inventory...")
+    with open(FILE_PATH, "w") as file:
+        json.dump(inventory, file, indent=4)
+    if not silent:
+        print("Inventory saved successfully to inventory.json.")
 
 
 def display_all(inventory):
@@ -86,3 +96,44 @@ def search_product(inventory):
             return
 
     print("Product not found.")
+    
+
+def run_menu(inventory):
+    print("\nMENU")
+    print("1. Display All Products")
+    print("2. Add Product")
+    print("3. Update Stock")
+    print("4. Search Product")
+    print("5. Save Inventory")
+    print("6. Exit")
+
+    choice = input("Enter option: ").strip()
+
+    if choice == "6":
+        print("Saving inventory before exit...")
+        save_inventory(inventory, silent=True)
+        print("Inventory saved successfully.")
+        print("Thank you for using Inventory Management System.")
+        print("Program terminated.")
+        return
+
+    actions = {
+        "1": display_all,
+        "2": add_product,
+        "3": update_stock,
+        "4": search_product,
+        "5": save_inventory,
+    }
+
+    action = actions.get(choice)
+    if action:
+        action(inventory)
+    else:
+        print("Invalid option. Please choose between 1 and 6.")
+
+    return run_menu(inventory) 
+
+
+print("INVENTORY MANAGEMENT SYSTEM")
+inventory = load_inventory()
+run_menu(inventory)

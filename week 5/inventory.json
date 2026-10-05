@@ -2,25 +2,31 @@
     {
         "id": "P001",
         "name": "Wireless Mouse",
-        "price": 25.50,
+        "price": 25.5,
         "stock": 40
     },
     {
         "id": "P002",
         "name": "Keyboard",
-        "price": 45.00,
+        "price": 45.0,
         "stock": 25
     },
     {
         "id": "P003",
         "name": "USB Cable",
-        "price": 10.00,
+        "price": 10.0,
         "stock": 30
     },
     {
         "id": "P004",
         "name": "Laptop Stand",
-        "price": 35.00,
+        "price": 35.0,
         "stock": 15
+    },
+    {
+        "id": "P005",
+        "name": "Laptop",
+        "price": 1200.0,
+        "stock": 10
     }
 ]
