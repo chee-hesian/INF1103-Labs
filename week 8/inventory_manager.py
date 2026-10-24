@@ -42,6 +42,33 @@ class Product:
             "price": self.__price,
             "stock": self.__stock
         }
+        
+class Inventory:
+    def __init__(self):
+        self.__products = []
+
+    def add_product(self, product: Product) -> bool:
+        """Adds a Product object if ID does not already exist."""
+        if self.search_product(product.get_id()):
+            return False
+        self.__products.append(product)
+        return True
+
+    def search_product(self, prod_id: str):
+        """Finds and returns a Product object by ID (case-insensitive), or None."""
+        for product in self.__products:
+            if product.get_id().lower() == prod_id.lower():
+                return product
+        return None
+
+    def display_all(self) -> None:
+        """Displays all products using each Product's display_information method."""
+        print("Current Inventory")
+        for product in self.__products:
+            product.display_information()
+
+    def get_all_products(self):
+        return self.__products
 
 def load_inventory():
     if os.path.exists(FILE_PATH):
