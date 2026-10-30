@@ -1,10 +1,11 @@
 import json
 import os
+from abc import ABC, abstractmethod
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FILE_PATH = os.path.join(SCRIPT_DIR, "inventory.json")
 
-class Product:
+class Product(ABC):
     def __init__(self, product_id: str, name: str, price: float, stock: int):
         self.__product_id = product_id
         self.__name = name
@@ -44,6 +45,11 @@ class Product:
             "stock": self.__stock
         }
 
+    @abstractmethod
+    def get_fulfilment_info(self) -> str:
+        """Subclasses must define their fulfilment behavior."""
+        pass
+
 class PhysicalProduct(Product):
     def __init__(self, product_id: str, name: str, price: float, stock: int, weight: float):
         super().__init__(product_id, name, price, stock)
@@ -51,6 +57,9 @@ class PhysicalProduct(Product):
 
     def get_weight(self) -> float:
         return self.__weight
+
+    def get_fulfilment_info(self) -> str:
+        return f"Physical shipping required for {self.get_name()} ({self.__weight}kg)."
 
     def display_information(self) -> None:
         super().display_information()
@@ -64,6 +73,9 @@ class DigitalProduct(Product):
 
     def get_download_size(self) -> float:
         return self.__download_size
+
+    def get_fulfilment_info(self) -> str:
+        return f"Delivered via digital download link ({self.__download_size}MB)."
 
     def display_information(self) -> None:
         super().display_information()
@@ -219,7 +231,7 @@ def run_menu(inventory):
 
     return run_menu(inventory) 
 
-
-print("INVENTORY MANAGEMENT SYSTEM")
-inventory = load_inventory()
-run_menu(inventory)
+if __name__ == "__main__":
+    print("INVENTORY MANAGEMENT SYSTEM")
+    inventory = load_inventory()
+    run_menu(inventory)
