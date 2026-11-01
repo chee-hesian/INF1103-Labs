@@ -5,6 +5,12 @@ from abc import ABC, abstractmethod
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FILE_PATH = os.path.join(SCRIPT_DIR, "inventory.json")
 
+class CanBeShipped(ABC):
+    @abstractmethod
+    def calculate_shipping_cost(self) -> float:
+        """Contract for calculating shipping charges."""
+        pass
+
 class Product(ABC):
     def __init__(self, product_id: str, name: str, price: float, stock: int):
         self.__product_id = product_id
@@ -35,22 +41,18 @@ class Product(ABC):
             f"Price: ${self.__price:.2f} | Stock: {self.__stock}",
             end=" | "
         )
-
+        
+    @abstractmethod
     def to_dict(self) -> dict:
-        """Helper to serialize Product back to dictionary for JSON persistence."""
-        return {
-            "id": self.__product_id,
-            "name": self.__name,
-            "price": self.__price,
-            "stock": self.__stock
-        }
+        """Serialize Product to dictionary for JSON persistence."""
+        pass
 
     @abstractmethod
     def get_fulfilment_info(self) -> str:
         """Subclasses must define their fulfilment behavior."""
         pass
 
-class PhysicalProduct(Product):
+class PhysicalProduct(Product, CanBeShipped):
     def __init__(self, product_id: str, name: str, price: float, stock: int, weight: float):
         super().__init__(product_id, name, price, stock)
         self.__weight = weight
@@ -58,13 +60,25 @@ class PhysicalProduct(Product):
     def get_weight(self) -> float:
         return self.__weight
 
+    def calculate_shipping_cost(self) -> float:
+        return 5.00 + (self.__weight * 2.00)
+
     def get_fulfilment_info(self) -> str:
-        return f"Physical shipping required for {self.get_name()} ({self.__weight}kg)."
+        return f"Physical shipping required (Weight: {self.__weight}kg, Shipping Cost: ${self.calculate_shipping_cost():.2f})"
 
     def display_information(self) -> None:
         super().display_information()
-        print(f"Weight: {self.__weight}kg")
+        print(f"Weight: {self.__weight}kg (Est. Shipping: ${self.calculate_shipping_cost():.2f})")
 
+    def to_dict(self) -> dict:
+        return {
+            "type": "physical",
+            "id": self.get_id(),
+            "name": self.get_name(),
+            "price": self.get_price(),
+            "stock": self.get_stock(),
+            "weight": self.__weight
+        }
 
 class DigitalProduct(Product):
     def __init__(self, product_id: str, name: str, price: float, stock: int, download_size: float):
@@ -80,6 +94,16 @@ class DigitalProduct(Product):
     def display_information(self) -> None:
         super().display_information()
         print(f"Download Size: {self.__download_size}MB")
+    
+    def to_dict(self) -> dict:
+        return {
+            "type": "digital",
+            "id": self.get_id(),
+            "name": self.get_name(),
+            "price": self.get_price(),
+            "stock": self.get_stock(),
+            "download_size": self.__download_size
+        }       
         
 class Inventory:
     def __init__(self):
@@ -116,7 +140,25 @@ def load_inventory() -> Inventory:
             with open(FILE_PATH, "r") as file:
                 raw_data = json.load(file)
                 for item in raw_data:
-                    product = Product(item["id"], item["name"], float(item["price"]), int(item["stock"]))
+                    p_type = item.get("type", "physical")
+                    if p_type == "physical":
+                        product = PhysicalProduct(
+                            item["id"],
+                            item["name"],
+                            float(item["price"]),
+                            int(item["stock"]),
+                            float(item.get("weight", 0.0))
+                        )
+                    elif p_type == "digital":
+                        product = DigitalProduct(
+                            item["id"],
+                            item["name"],
+                            float(item["price"]),
+                            int(item["stock"]),
+                            float(item.get("download_size", 0.0))
+                        )
+                    else:
+                        continue
                     inventory.add_product(product)
                 print("Inventory loaded successfully.")
         except json.JSONDecodeError:
@@ -142,9 +184,17 @@ def display_all_handler(inventory: Inventory):
 
 
 def add_product_handler(inventory: Inventory):
-    print("Add New Product")
-    prod_id = input("Product ID: ").strip()
+    print("\n--- Add New Product ---")
+    print("Select Product Type:")
+    print("1. Physical Product")
+    print("2. Digital Product")
+    type_choice = input("Enter choice (1/2): ").strip()
 
+    if type_choice not in ("1", "2"):
+        print("Invalid product type selected.")
+        return
+
+    prod_id = input("Product ID: ").strip()
     if inventory.search_product(prod_id):
         print("Product ID already exists.")
         return
@@ -153,11 +203,16 @@ def add_product_handler(inventory: Inventory):
     try:
         price = float(input("Price: ").strip())
         stock = int(input("Stock Quantity: ").strip())
+        if type_choice == "1":
+            weight = float(input("Weight (kg): ").strip())
+            new_prod = PhysicalProduct(prod_id, name, price, stock, weight)
+        else:
+            download_size = float(input("Download Size (MB): ").strip())
+            new_prod = DigitalProduct(prod_id, name, price, stock, download_size)
     except ValueError:
-        print("Invalid numerical value.")
+        print("Invalid numerical value entered.")
         return
 
-    new_prod = Product(prod_id, name, price, stock)
     inventory.add_product(new_prod)
     print("Product added successfully!")
 
@@ -182,16 +237,14 @@ def update_stock_handler(inventory: Inventory):
 
 
 def search_product_handler(inventory: Inventory):
-    print("Search Product")
+    print("\n--- Search Product ---")
     prod_id = input("Enter Product ID: ").strip()
     product = inventory.search_product(prod_id)
 
     if product:
-        print("Product Found")
-        print(f"ID: {product.get_id()}")
-        print(f"Name: {product.get_name()}")
-        print(f"Price: ${product.get_price():.2f}")
-        print(f"Stock: {product.get_stock()}")
+        print("Product Found:")
+        product.display_information()
+        print(f"Fulfilment Info: {product.get_fulfilment_info()}")
     else:
         print("Product not found.")
     
