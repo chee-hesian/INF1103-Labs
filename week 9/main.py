@@ -248,7 +248,6 @@ def search_product_handler(inventory: Inventory):
     else:
         print("Product not found.")
     
-
 def run_menu(inventory):
     print("\nMENU")
     print("1. Display All Products")
