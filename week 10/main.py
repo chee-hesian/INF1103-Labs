@@ -10,7 +10,36 @@ class CanBeShipped(ABC):
     def calculate_shipping_cost(self) -> float:
         """Contract for calculating shipping charges."""
         pass
+
+class OrderLine:
+    def __init__(self, product: Product, quantity: int):
+        self.product: Product = product
+        self.quantity: int = quantity
     
+    def calculate_subtotal(self) -> float:
+        """Calculate subtotal for this orderline."""
+        return self.product.get_price() * self.quantity
+    
+class Order:
+    def __init__(self, order_id: str):
+        self.order_id = order_id
+        self.order_lines: list[OrderLine] = []
+    
+    def add_order_line(self, product: Product, quantity: int) -> None:
+        """Add an orderline to the order."""
+        order_line = OrderLine(product, quantity)
+        self.order_lines.append(order_line)
+    
+    def calculate_total(self) -> float:
+        """Calculate total cost for the order."""
+        return sum(line.calculate_subtotal() for line in self.order_lines)    
+    
+    def display_order_summary(self) -> None:
+        """Display a summary of the order."""
+        print(f"Order ID: {self.order_id}")
+        for line in self.order_lines:
+            print(f"Product: {line.product.get_name()} | Quantity: {line.quantity} | Subtotal: ${line.calculate_subtotal():.2f}")
+        print(f"Total Order Cost: ${self.calculate_total():.2f}")
     
 class Supplier:
     def __init__(self, supplier_id: str, name: str, contact_email: str):
@@ -133,7 +162,12 @@ class DigitalProduct(Product):
             "name": self.get_name(),
             "price": self.get_price(),
             "stock": self.get_stock(),
-            "download_size": self.__download_size
+            "download_size": self.__download_size,
+            "supplier": {
+                "id": self.get_supplier().get_id(),
+                "name": self.get_supplier().get_name(),
+                "contact_info": self.get_supplier().get_contact_info()
+            } if self.get_supplier() else None
         }       
         
 class Inventory:
@@ -147,18 +181,18 @@ class Inventory:
         self.products.append(product)
         return True
 
-    def find_product(self, prod_id: str) -> Product | None:
+    def find_product(self, product_id: str) -> Product | None:
         """Finds and returns a Product object by ID (case-insensitive), or None."""
         for product in self.products:
-            if product.get_id().lower() == prod_id.lower():
+            if product.get_id().lower() == product_id.lower():
                 return product
         return None
 
     search_product = find_product  # Alias for backward compatibility
     
-    def remove_product(self, prod_id: str) -> bool:
+    def remove_product(self, product_id: str) -> bool:
         """Removes a Product object by ID (case-insensitive). Returns True if removed, False if not found."""
-        product = self.search_product(prod_id)
+        product = self.search_product(product_id)
         if product:
             self.products.remove(product)
             return True
@@ -182,13 +216,21 @@ def load_inventory() -> Inventory:
                 raw_data = json.load(file)
                 for item in raw_data:
                     p_type = item.get("type", "physical")
+                    
+                    supp_data = item.get("supplier", {})
+                    supplier = Supplier(
+                        supp_data.get("supplier_id", "SUP-DEFAULT"),
+                        supp_data.get("name", "Standard Supplies"),
+                        supp_data.get("contact_info", "supplier@example.com")
+                    )
                     if p_type == "physical":
                         product = PhysicalProduct(
                             item["id"],
                             item["name"],
                             float(item["price"]),
                             int(item["stock"]),
-                            float(item.get("weight", 0.0))
+                            float(item.get("weight", 0.0)),
+                            supplier
                         )
                     elif p_type == "digital":
                         product = DigitalProduct(
@@ -196,7 +238,8 @@ def load_inventory() -> Inventory:
                             item["name"],
                             float(item["price"]),
                             int(item["stock"]),
-                            float(item.get("download_size", 0.0))
+                            float(item.get("download_size", 0.0)),
+                            supplier
                         )
                     else:
                         continue
@@ -241,15 +284,21 @@ def add_product_handler(inventory: Inventory):
         return
 
     name = input("Product Name: ").strip()
+    
+    supp_id = input("Supplier ID: ").strip()
+    supp_name = input("Supplier Name: ").strip()
+    supp_email = input("Supplier Contact Email: ").strip()
+    supplier = Supplier(supp_id, supp_name, supp_email)
+    
     try:
         price = float(input("Price: ").strip())
         stock = int(input("Stock Quantity: ").strip())
         if type_choice == "1":
             weight = float(input("Weight (kg): ").strip())
-            new_prod = PhysicalProduct(prod_id, name, price, stock, weight)
+            new_prod = PhysicalProduct(prod_id, name, price, stock, weight, supplier)
         else:
             download_size = float(input("Download Size (MB): ").strip())
-            new_prod = DigitalProduct(prod_id, name, price, stock, download_size)
+            new_prod = DigitalProduct(prod_id, name, price, stock, download_size, supplier)
     except ValueError:
         print("Invalid numerical value entered.")
         return
@@ -322,8 +371,8 @@ def run_menu(inventory):
     "2": add_product_handler,
     "3": update_stock_handler,
     "4": search_product_handler,
-    "5": save_inventory,
-    "6": remove_product_handler,
+    "5": remove_product_handler,
+    "6": save_inventory,
     }
 
     action = actions.get(choice)
