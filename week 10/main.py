@@ -1,9 +1,14 @@
+from __future__ import annotations
 import json
 import os
 from abc import ABC, abstractmethod
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FILE_PATH = os.path.join(SCRIPT_DIR, "inventory.json")
+
+def show_product_details(product: Product) -> None:
+    product.display_information()
+    print(product.get_fulfilment_info())
 
 class CanBeShipped(ABC):
     @abstractmethod
@@ -134,14 +139,14 @@ class PhysicalProduct(Product, CanBeShipped):
             "stock": self.get_stock(),
             "weight": self.__weight,
             "supplier": {
-                "id": self.get_supplier().get_id(),
+                "supplier_id": self.get_supplier().get_id(),
                 "name": self.get_supplier().get_name(),
                 "contact_info": self.get_supplier().get_contact_info()
             } if self.get_supplier() else None
         }
 
 class DigitalProduct(Product):
-    def __init__(self, product_id: str, name: str, price: float, stock: int, download_size: float, supplier: Supplier = None):
+    def __init__(self, product_id: str, name: str, price: float, stock: int, download_size: float, supplier: Supplier):
         super().__init__(product_id, name, price, stock, supplier)
         self.__download_size = download_size
 
@@ -164,7 +169,7 @@ class DigitalProduct(Product):
             "stock": self.get_stock(),
             "download_size": self.__download_size,
             "supplier": {
-                "id": self.get_supplier().get_id(),
+                "supplier_id": self.get_supplier().get_id(),
                 "name": self.get_supplier().get_name(),
                 "contact_info": self.get_supplier().get_contact_info()
             } if self.get_supplier() else None
@@ -333,8 +338,7 @@ def search_product_handler(inventory: Inventory):
 
     if product:
         print("Product Found:")
-        product.display_information()
-        print(f"Fulfilment Info: {product.get_fulfilment_info()}")
+        show_product_details(product)
     else:
         print("Product not found.")
     
