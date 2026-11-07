@@ -1,20 +1,26 @@
 [
     {
+        "type": "physical",
         "id": "P001",
-        "name": "Wireless Mouse",
-        "price": 25.5,
-        "stock": 40
+        "name": "Mechanical Keyboard",
+        "price": 89.9,
+        "stock": 15,
+        "weight": 1.25
     },
     {
+        "type": "digital",
+        "id": "D001",
+        "name": "Cloud Backup License",
+        "price": 19.99,
+        "stock": 100,
+        "download_size": 250.0
+    },
+    {
+        "type": "physical",
         "id": "P002",
-        "name": "Keyboard",
-        "price": 45.0,
-        "stock": 25
-    },
-    {
-        "id": "P003",
-        "name": "USB Cable",
-        "price": 10.0,
-        "stock": 30
+        "name": "Wireless Mouse",
+        "price": 20.0,
+        "stock": 15,
+        "weight": 0.1
     }
 ]
