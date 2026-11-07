@@ -138,30 +138,40 @@ class DigitalProduct(Product):
         
 class Inventory:
     def __init__(self):
-        self.__products = []
+        self.products: list[Product] = []
 
     def add_product(self, product: Product) -> bool:
         """Adds a Product object if ID does not already exist."""
         if self.search_product(product.get_id()):
             return False
-        self.__products.append(product)
+        self.products.append(product)
         return True
 
-    def search_product(self, prod_id: str):
+    def find_product(self, prod_id: str) -> Product | None:
         """Finds and returns a Product object by ID (case-insensitive), or None."""
-        for product in self.__products:
+        for product in self.products:
             if product.get_id().lower() == prod_id.lower():
                 return product
         return None
 
+    search_product = find_product  # Alias for backward compatibility
+    
+    def remove_product(self, prod_id: str) -> bool:
+        """Removes a Product object by ID (case-insensitive). Returns True if removed, False if not found."""
+        product = self.search_product(prod_id)
+        if product:
+            self.products.remove(product)
+            return True
+        return False
+
     def display_all(self) -> None:
         """Displays all products using each Product's display_information method."""
         print("Current Inventory")
-        for product in self.__products:
+        for product in self.products:
             product.display_information()
 
     def get_all_products(self):
-        return self.__products
+        return self.products
 
 def load_inventory() -> Inventory:
     inventory = Inventory()
@@ -279,18 +289,27 @@ def search_product_handler(inventory: Inventory):
     else:
         print("Product not found.")
     
+def remove_product_handler(inventory: Inventory):
+    print("\n--- Remove Product ---")
+    prod_id = input("Enter Product ID to remove: ").strip()
+    if inventory.remove_product(prod_id):
+        print(f"Product with ID '{prod_id}' removed successfully.")
+    else:
+        print(f"No product found with ID '{prod_id}'.")    
+    
 def run_menu(inventory):
     print("\nMENU")
     print("1. Display All Products")
     print("2. Add Product")
     print("3. Update Stock")
     print("4. Search Product")
-    print("5. Save Inventory")
-    print("6. Exit")
+    print("5. Remove Product")
+    print("6. Save Inventory")
+    print("7. Exit")
 
     choice = input("Enter option: ").strip()
 
-    if choice == "6":
+    if choice == "7":
         print("Saving inventory before exit...")
         save_inventory(inventory, silent=True)
         print("Inventory saved successfully.")
@@ -304,13 +323,14 @@ def run_menu(inventory):
     "3": update_stock_handler,
     "4": search_product_handler,
     "5": save_inventory,
+    "6": remove_product_handler,
     }
 
     action = actions.get(choice)
     if action:
         action(inventory)
     else:
-        print("Invalid option. Please choose between 1 and 6.")
+        print("Invalid option. Please choose between 1 and 7.")
 
     return run_menu(inventory) 
 
