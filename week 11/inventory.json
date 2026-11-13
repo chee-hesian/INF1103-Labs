@@ -1,0 +1,28 @@
+[
+    {
+        "type": "physical",
+        "id": "P001",
+        "name": "Mechanical Keyboard",
+        "price": 89.9,
+        "stock": 15,
+        "weight": 1.25,
+        "supplier": {
+            "supplier_id": "SUP-01",
+            "name": "Keychron Logistics",
+            "contact_info": "support@keychron.com"
+        }
+    },
+    {
+        "type": "digital",
+        "id": "D001",
+        "name": "Cloud Backup License",
+        "price": 19.99,
+        "stock": 100,
+        "download_size": 250.0,
+        "supplier": {
+            "supplier_id": "SUP-02",
+            "name": "CloudSafe Systems",
+            "contact_info": "licensing@cloudsafe.com"
+        }
+    }
+]
