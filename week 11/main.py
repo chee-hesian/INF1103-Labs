@@ -7,6 +7,7 @@ from product import Product
 from physical_product import PhysicalProduct
 from digital_product import DigitalProduct
 from inventory import Inventory
+from product_factory import ProductFactory
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 FILE_PATH = os.path.join(SCRIPT_DIR, "inventory.json")
@@ -30,27 +31,21 @@ def load_inventory() -> Inventory:
                         supp_data.get("name", "Standard Supplies"),
                         supp_data.get("contact_info", "supplier@example.com")
                     )
-                    if p_type == "physical":
-                        product = PhysicalProduct(
+                    try:
+                        product = ProductFactory.create(
+                            p_type,
                             item["id"],
                             item["name"],
                             float(item["price"]),
                             int(item["stock"]),
-                            float(item.get("weight", 0.0)),
-                            supplier
+                            supplier,
+                            weight=float(item.get("weight", 0.0)),
+                            download_size=float(item.get("download_size", 0.0)),
                         )
-                    elif p_type == "digital":
-                        product = DigitalProduct(
-                            item["id"],
-                            item["name"],
-                            float(item["price"]),
-                            int(item["stock"]),
-                            float(item.get("download_size", 0.0)),
-                            supplier
-                        )
-                    else:
-                        continue
-                    inventory.add_product(product)
+                        inventory.add_product(product)
+                    except (ValueError, KeyError):
+                        print(f"Error: Invalid data for product with ID {item.get('id')}. Skipping...")
+                        continue    
                 print("Inventory loaded successfully.")
         except json.JSONDecodeError:
             print("Error: inventory.json is not a valid JSON file. Starting with an empty inventory.")
@@ -98,10 +93,10 @@ def add_product_handler(inventory: Inventory) -> None:
         stock = int(input("Stock Quantity: ").strip())
         if type_choice == "1":
             weight = float(input("Weight (kg): ").strip())
-            new_prod = PhysicalProduct(prod_id, name, price, stock, weight, supplier)
+            new_prod = ProductFactory.create("physical", prod_id, name, price, stock, supplier, weight=weight)
         else:
             download_size = float(input("Download Size (MB): ").strip())
-            new_prod = DigitalProduct(prod_id, name, price, stock, download_size, supplier)
+            new_prod = ProductFactory.create("digital", prod_id, name, price, stock, supplier, download_size=download_size)
     except ValueError:
         print("Invalid numerical value entered.")
         return
